@@ -216,3 +216,26 @@ async function showStudentDashboard(studentId){
         studentHistoryList.appendChild(li);
     });
 }
+
+import { updatePassword } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+
+const newPasswordInput = document.getElementById("new-password");
+const changePasswordBtn = document.getElementById("change-password-btn");
+const passwordChangeMsg = document.getElementById("password-change-msg");
+
+changePasswordBtn.addEventListener("click", async () => {
+    const newPassword = newPasswordInput.value.trim();
+    if(!newPassword) return alert("Zadej nové heslo!");
+
+    try {
+        const user = auth.currentUser;
+        if(!user) throw new Error("Uživatel není přihlášen.");
+
+        await updatePassword(user, newPassword);
+        passwordChangeMsg.textContent = "Heslo bylo úspěšně změněno!";
+        newPasswordInput.value = "";
+    } catch(e) {
+        console.error(e);
+        passwordChangeMsg.textContent = "Chyba při změně hesla: " + e.message;
+    }
+});
