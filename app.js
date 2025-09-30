@@ -41,7 +41,7 @@ loginBtn.addEventListener("click", async () => {
 
         if(role === "admin"){
             showAdminDashboard();
-        } else {
+        } else if(role === "student") {
             showStudentDashboard(userDoc.data().studentId);
         }
     } catch (e) {
