@@ -32,13 +32,16 @@
         <h3>Seznam žáků</h3>
         <ul id="students-list"></ul>
 
-        <h3>Transakce</h3>
-        <input type="text" id="payee" placeholder="Jméno žáka">
-        <input type="number" id="amount" placeholder="Částka">
-        <button id="add-transaction-btn">Přidat platbu / výběr</button>
+    <h3>Transakce</h3>
+    <input type="text" id="payee" placeholder="Jméno žáka">
+    <input type="number" id="amount" placeholder="Částka">
+    <input type="text" id="reason" placeholder="Důvod platby"> <!-- nové pole -->
+    <button id="add-transaction-btn">Přidat platbu / výběr</button>
 
-        <h3>Historie</h3>
-        <ul id="history-list"></ul>
+    <h3>Historie</h3>
+    <ul id="history-list"></ul>
+
+    <p>Celkem vybráno od všech žáků: <span id="total-cash">0</span> Kč</p>
 
         <button id="logout-btn">Odhlásit se</button>
     </div>
