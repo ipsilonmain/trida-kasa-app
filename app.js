@@ -1,6 +1,6 @@
 import { auth, db } from './firebase-config.js';
 import { signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
-import { collection, doc, getDoc, getDocs, addDoc, updateDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+import { collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
 
 // HTML elementy
 const loginSection = document.getElementById("login-section");
@@ -18,6 +18,7 @@ const addStudentBtn = document.getElementById("add-student-btn");
 const studentsList = document.getElementById("students-list");
 const payeeInput = document.getElementById("payee");
 const amountInput = document.getElementById("amount");
+const reasonInput = document.getElementById("reason");
 const addTransactionBtn = document.getElementById("add-transaction-btn");
 const historyList = document.getElementById("history-list");
 const logoutBtn = document.getElementById("logout-btn");
@@ -28,16 +29,15 @@ const studentBalanceEl = document.getElementById("student-balance");
 const studentHistoryList = document.getElementById("student-history-list");
 const logoutBtnStudent = document.getElementById("logout-btn-student");
 
-// Přihlášení
+// ===================== Přihlášení =====================
 loginBtn.addEventListener("click", async () => {
     try {
         const userCredential = await signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
         const user = userCredential.user;
 
-        // Zjistit roli uživatele z kolekce users
         const userDoc = await getDoc(doc(db, "users", user.uid));
         if (!userDoc.exists()) throw new Error("Uživatel nemá přiřazenou roli.");
-        const role = userDoc.data().role; // 'admin' nebo 'student'
+        const role = userDoc.data().role;
 
         if(role === "admin"){
             showAdminDashboard();
@@ -50,14 +50,8 @@ loginBtn.addEventListener("click", async () => {
 });
 
 // Logout
-logoutBtn.addEventListener("click", async () => {
-    await signOut(auth);
-    location.reload();
-});
-logoutBtnStudent.addEventListener("click", async () => {
-    await signOut(auth);
-    location.reload();
-});
+logoutBtn.addEventListener("click", async () => { await signOut(auth); location.reload(); });
+logoutBtnStudent.addEventListener("click", async () => { await signOut(auth); location.reload(); });
 
 // ===================== Admin Dashboard =====================
 async function showAdminDashboard(){
@@ -68,6 +62,7 @@ async function showAdminDashboard(){
     await loadHistory();
 }
 
+// Načtení žáků
 async function loadStudents(){
     studentsList.innerHTML = "";
     const studentsSnapshot = await getDocs(collection(db, "students"));
@@ -78,15 +73,15 @@ async function loadStudents(){
     });
 }
 
+// Celková kasa
 async function loadTotalCash(){
     let total = 0;
     const studentsSnapshot = await getDocs(collection(db, "students"));
-    studentsSnapshot.forEach(docSnap => {
-        total += docSnap.data().balance || 0;
-    });
+    studentsSnapshot.forEach(docSnap => { total += docSnap.data().balance || 0; });
     totalCashEl.textContent = total;
 }
 
+// Přidání žáka
 addStudentBtn.addEventListener("click", async () => {
     if(newStudentName.value.trim() === "") return;
     await addDoc(collection(db, "students"), { name: newStudentName.value.trim(), balance: 0 });
@@ -94,79 +89,13 @@ addStudentBtn.addEventListener("click", async () => {
     loadStudents();
 });
 
-addTransactionBtn.addEventListener("click", async () => {
-    const studentName = payeeInput.value.trim();
-    const amount = Number(amountInput.value);
-    if(!studentName || !amount) return;
-
-    const studentsSnapshot = await getDocs(collection(db, "students"));
-    let studentId = null;
-    let studentBalance = 0;
-    studentsSnapshot.forEach(docSnap => {
-        if(docSnap.data().name === studentName){
-            studentId = docSnap.id;
-            studentBalance = docSnap.data().balance || 0;
-        }
-    });
-    if(!studentId) return alert("Žák nenalezen");
-
-    const newBalance = studentBalance + amount;
-    await updateDoc(doc(db, "students", studentId), { balance: newBalance });
-    await addDoc(collection(db, "students", studentId, "transactions"), {
-        amount: amount,
-        type: amount>0 ? "platba" : "vyber",
-        timestamp: new Date()
-    });
-
-    payeeInput.value = "";
-    amountInput.value = "";
-    loadStudents();
-    loadTotalCash();
-    loadHistory();
-});
-
-async function loadHistory(){
-    historyList.innerHTML = "";
-    const studentsSnapshot = await getDocs(collection(db, "students"));
-    for(const docSnap of studentsSnapshot.docs){
-        const transactionsSnap = await getDocs(collection(db, "students", docSnap.id, "transactions"));
-        transactionsSnap.forEach(tx => {
-            const li = document.createElement("li");
-            li.textContent = `${docSnap.data().name}: ${tx.data().amount} Kč (${tx.data().type}) - ${tx.data().timestamp.toDate()}`;
-            historyList.appendChild(li);
-        });
-    }
-}
-
-// ===================== Student Dashboard =====================
-async function showStudentDashboard(studentId){
-    loginSection.style.display = "none";
-    studentDashboard.style.display = "block";
-
-    const studentDoc = await getDoc(doc(db, "students", studentId));
-    if(!studentDoc.exists()) return;
-
-    studentNameEl.textContent = studentDoc.data().name;
-    studentBalanceEl.textContent = studentDoc.data().balance || 0;
-
-    const transactionsSnap = await getDocs(collection(db, "students", studentId, "transactions"));
-    studentHistoryList.innerHTML = "";
-    transactionsSnap.forEach(tx => {
-        const li = document.createElement("li");
-        li.textContent = `${tx.data().amount} Kč (${tx.data().type}) - ${tx.data().timestamp.toDate()}`;
-        studentHistoryList.appendChild(li);
-    });
-}
-
-
 // Přidání transakce s důvodem
 addTransactionBtn.addEventListener("click", async () => {
     const studentName = payeeInput.value.trim();
     const amount = Number(amountInput.value);
-    const reason = document.getElementById("reason").value.trim();
+    const reason = reasonInput.value.trim();
     if(!studentName || !amount || !reason) return alert("Vyplň všechny údaje!");
 
-    // najdi žáka
     const studentsSnapshot = await getDocs(collection(db, "students"));
     let studentId = null;
     let studentBalance = 0;
@@ -181,55 +110,4 @@ addTransactionBtn.addEventListener("click", async () => {
     const newBalance = studentBalance + amount;
     await updateDoc(doc(db, "students", studentId), { balance: newBalance });
 
-    // přidání transakce s reason
     await addDoc(collection(db, "students", studentId, "transactions"), {
-        amount: amount,
-        type: amount>0 ? "platba" : "vyber",
-        reason: reason,
-        timestamp: new Date()
-    });
-
-    payeeInput.value = "";
-    amountInput.value = "";
-    document.getElementById("reason").value = "";
-
-    loadStudents();
-    loadTotalCash();
-    loadHistory();
-});
-
-// Načtení historie s důvodem a tlačítkem odebrat
-async function loadHistory(){
-    historyList.innerHTML = "";
-    const studentsSnapshot = await getDocs(collection(db, "students"));
-
-    for(const docSnap of studentsSnapshot.docs){
-        const transactionsSnap = await getDocs(collection(db, "students", docSnap.id, "transactions"));
-        transactionsSnap.forEach(tx => {
-            const li = document.createElement("li");
-            li.textContent = `${docSnap.data().name}: ${tx.data().amount} Kč (${tx.data().type}) - ${tx.data().reason} - ${tx.data().timestamp.toDate()}`;
-
-            // tlačítko odebrat
-            const removeBtn = document.createElement("button");
-            removeBtn.textContent = "Odebrat";
-            removeBtn.style.marginLeft = "10px";
-            removeBtn.dataset.studentId = docSnap.id;
-            removeBtn.dataset.txId = tx.id;
-            removeBtn.addEventListener("click", async () => {
-                // smazat transakci
-                await deleteDoc(doc(db, "students", docSnap.id, "transactions", tx.id));
-
-                // aktualizovat zůstatek
-                const updatedBalance = (docSnap.data().balance || 0) - tx.data().amount;
-                await updateDoc(doc(db, "students", docSnap.id), { balance: updatedBalance });
-
-                loadStudents();
-                loadTotalCash();
-                loadHistory();
-            });
-
-            li.appendChild(removeBtn);
-            historyList.appendChild(li);
-        });
-    }
-}
