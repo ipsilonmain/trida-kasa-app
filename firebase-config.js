@@ -4,12 +4,12 @@ import { getAuth } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth
 import { getFirestore } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
 const firebaseConfig = {
-    apiKey: "TVŮJ_API_KEY",
-    authDomain: "TVŮJ_PROJECT_ID.firebaseapp.com",
-    projectId: "TVŮJ_PROJECT_ID",
-    storageBucket: "TVŮJ_PROJECT_ID.appspot.com",
-    messagingSenderId: "TVÉ_SENDER_ID",
-    appId: "TVÉ_APP_ID"
+    apiKey: "AIzaSyDaXCsrLdejMBWznEoeiaOkxEFyRWWK1RI",
+    authDomain: "trida-kasa.firebaseapp.com",
+    projectId: "trida-kasa",
+    storageBucket: "trida-kasa.firebasestorage.app",
+    messagingSenderId: "882167279633",
+    appId: "1:882167279633:web:ba5f62338ff290e01241b0"
 };
 
 export const app = initializeApp(firebaseConfig);
