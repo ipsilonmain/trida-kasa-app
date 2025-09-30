@@ -1,27 +1,27 @@
-// Firebase SDK imports (modulární verze)
+// ====== FIREBASE SDK IMPORT ======
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } 
   from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, updateDoc, arrayUnion, onSnapshot } 
   from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-// Tvůj firebaseConfig z Firebase Console
+// ====== TVŮJ FIREBASE CONFIG ======
 const firebaseConfig = {
-  apiKey: "AIzaSyDaXCsrLdejMBWznEoeiaOkxEFyRWWK1RI",
-  authDomain: "trida-kasa.firebaseapp.com",
-  projectId: "trida-kasa",
-  storageBucket: "trida-kasa.firebasestorage.app",
-  messagingSenderId: "882167279633",
-  appId: "1:882167279633:web:ba5f62338ff290e01241b0",
-  measurementId: "G-RQE5PYP8ME"
+  apiKey: "TVŮJ_API_KEY",
+  authDomain: "TVŮJ_PROJECT.firebaseapp.com",
+  projectId: "TVŮJ_PROJECT_ID",
+  storageBucket: "TVŮJ_PROJECT.appspot.com",
+  messagingSenderId: "TVŮJ_SENDER_ID",
+  appId: "TVŮJ_APP_ID",
+  measurementId: "TVŮJ_MEASUREMENT_ID"
 };
 
-// Inicializace Firebase
+// ====== INITIALIZACE FIREBASE ======
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// ====== DOM ELEMENTS ======
+// ====== DOM ELEMENTY ======
 const loginScreen = document.getElementById("login-screen");
 const appScreen = document.getElementById("app-screen");
 const loginBtn = document.getElementById("login-btn");
@@ -60,17 +60,17 @@ onAuthStateChanged(auth, (user) => {
   }
 });
 
-// ====== APP LOGIC ======
+// ====== APP LOGIKA ======
 async function startApp() {
   const kasaDoc = doc(db, "kasa", "data");
 
-  // pokud neexistuje, vytvoříme prázdnou databázi
+  // Pokud dokument neexistuje, vytvoříme prázdnou strukturu
   const snapshot = await getDoc(kasaDoc);
   if (!snapshot.exists()) {
     await setDoc(kasaDoc, { students: [], payments: [], history: [] });
   }
 
-  // realtime update
+  // Realtime update
   onSnapshot(kasaDoc, (snap) => {
     const data = snap.data();
     renderStudents(data.students);
@@ -79,7 +79,7 @@ async function startApp() {
     renderCash(data.students, data.payments);
   });
 
-  // přidání žáka
+  // Přidání žáka
   addStudentBtn.onclick = async () => {
     const name = prompt("Jméno žáka:");
     if (!name) return;
@@ -89,7 +89,7 @@ async function startApp() {
     });
   };
 
-  // přidání platby
+  // Přidání platby
   addPaymentBtn.onclick = async () => {
     const label = prompt("Název platby:");
     const amount = prompt("Částka:");
@@ -101,7 +101,7 @@ async function startApp() {
   };
 }
 
-// ====== RENDER FUNCTIONS ======
+// ====== RENDER FUNKCE ======
 function renderStudents(students) {
   studentList.innerHTML = "";
   students.forEach(s => {
@@ -118,7 +118,7 @@ function renderPayments(payments, students) {
     div.className = "payment";
     div.innerHTML = `<strong>${p.label}</strong> – ${p.amount} Kč`;
 
-    // seznam žáků
+    // Seznam žáků s checkboxy
     students.forEach(s => {
       const checkbox = document.createElement("input");
       checkbox.type = "checkbox";
