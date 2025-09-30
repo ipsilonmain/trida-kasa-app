@@ -1,6 +1,6 @@
 import { auth, db } from './firebase-config.js';
 import { signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, updatePassword } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
-import { collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+import { collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
 
 // HTML elementy
 const loginSection = document.getElementById("login-section");
@@ -139,7 +139,7 @@ addTransactionBtn.addEventListener("click", async () => {
     const newBalance = (studentDoc.data().balance || 0) + amount;
 
     await updateDoc(doc(db, "students", studentId), { balance: newBalance });
-    await addDoc(collection(db, "students", studentId, "transactions"), {
+    const txRef = await addDoc(collection(db, "students", studentId, "transactions"), {
         amount: amount,
         type: amount>0?"platba":"vyber",
         reason: reason,
@@ -151,9 +151,10 @@ addTransactionBtn.addEventListener("click", async () => {
     await loadStudents();
     await loadTotalCash();
     await loadHistory();
+    await loadHistoryDropdown();
 });
 
-// Historie všech studentů
+// Historie všech studentů s tlačítkem odstranit
 async function loadHistory(){
     historyList.innerHTML = "";
     const studentsSnapshot = await getDocs(collection(db, "students"));
@@ -162,6 +163,19 @@ async function loadHistory(){
         transactionsSnap.forEach(tx => {
             const li = document.createElement("li");
             li.textContent = `${docSnap.data().name}: ${tx.data().amount} Kč (${tx.data().type}) - ${tx.data().reason || ''} - ${tx.data().timestamp.toDate().toLocaleString()}`;
+            const delBtn = document.createElement("button");
+            delBtn.textContent = "Odstranit";
+            delBtn.style.marginLeft = "10px";
+            delBtn.addEventListener("click", async () => {
+                await deleteDoc(doc(db, "students", docSnap.id, "transactions", tx.id));
+                // aktualizovat balance
+                const newBalance = (docSnap.data().balance || 0) - tx.data().amount;
+                await updateDoc(doc(db, "students", docSnap.id), { balance: newBalance });
+                await loadStudents();
+                await loadTotalCash();
+                await loadHistory();
+            });
+            li.appendChild(delBtn);
             historyList.appendChild(li);
         });
     }
@@ -188,6 +202,20 @@ showStudentHistoryBtn.addEventListener("click", async () => {
     transactionsSnap.forEach(tx => {
         const li = document.createElement("li");
         li.textContent = `${tx.data().amount} Kč (${tx.data().type}) - ${tx.data().reason || ''} - ${tx.data().timestamp.toDate().toLocaleString()}`;
+        const delBtn = document.createElement("button");
+        delBtn.textContent = "Odstranit";
+        delBtn.style.marginLeft = "10px";
+        delBtn.addEventListener("click", async () => {
+            await deleteDoc(doc(db, "students", studentId, "transactions", tx.id));
+            // aktualizovat balance
+            const studentDoc = await getDoc(doc(db, "students", studentId));
+            const newBalance = (studentDoc.data().balance || 0) - tx.data().amount;
+            await updateDoc(doc(db, "students", studentId), { balance: newBalance });
+            await loadStudents();
+            await loadTotalCash();
+            showStudentHistoryBtn.click(); // reload dropdown historie
+        });
+        li.appendChild(delBtn);
         selectedStudentHistoryList.appendChild(li);
     });
 });
