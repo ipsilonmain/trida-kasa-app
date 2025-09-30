@@ -157,3 +157,79 @@ async function showStudentDashboard(studentId){
         studentHistoryList.appendChild(li);
     });
 }
+
+
+// Přidání transakce s důvodem
+addTransactionBtn.addEventListener("click", async () => {
+    const studentName = payeeInput.value.trim();
+    const amount = Number(amountInput.value);
+    const reason = document.getElementById("reason").value.trim();
+    if(!studentName || !amount || !reason) return alert("Vyplň všechny údaje!");
+
+    // najdi žáka
+    const studentsSnapshot = await getDocs(collection(db, "students"));
+    let studentId = null;
+    let studentBalance = 0;
+    studentsSnapshot.forEach(docSnap => {
+        if(docSnap.data().name === studentName){
+            studentId = docSnap.id;
+            studentBalance = docSnap.data().balance || 0;
+        }
+    });
+    if(!studentId) return alert("Žák nenalezen");
+
+    const newBalance = studentBalance + amount;
+    await updateDoc(doc(db, "students", studentId), { balance: newBalance });
+
+    // přidání transakce s reason
+    await addDoc(collection(db, "students", studentId, "transactions"), {
+        amount: amount,
+        type: amount>0 ? "platba" : "vyber",
+        reason: reason,
+        timestamp: new Date()
+    });
+
+    payeeInput.value = "";
+    amountInput.value = "";
+    document.getElementById("reason").value = "";
+
+    loadStudents();
+    loadTotalCash();
+    loadHistory();
+});
+
+// Načtení historie s důvodem a tlačítkem odebrat
+async function loadHistory(){
+    historyList.innerHTML = "";
+    const studentsSnapshot = await getDocs(collection(db, "students"));
+
+    for(const docSnap of studentsSnapshot.docs){
+        const transactionsSnap = await getDocs(collection(db, "students", docSnap.id, "transactions"));
+        transactionsSnap.forEach(tx => {
+            const li = document.createElement("li");
+            li.textContent = `${docSnap.data().name}: ${tx.data().amount} Kč (${tx.data().type}) - ${tx.data().reason} - ${tx.data().timestamp.toDate()}`;
+
+            // tlačítko odebrat
+            const removeBtn = document.createElement("button");
+            removeBtn.textContent = "Odebrat";
+            removeBtn.style.marginLeft = "10px";
+            removeBtn.dataset.studentId = docSnap.id;
+            removeBtn.dataset.txId = tx.id;
+            removeBtn.addEventListener("click", async () => {
+                // smazat transakci
+                await deleteDoc(doc(db, "students", docSnap.id, "transactions", tx.id));
+
+                // aktualizovat zůstatek
+                const updatedBalance = (docSnap.data().balance || 0) - tx.data().amount;
+                await updateDoc(doc(db, "students", docSnap.id), { balance: updatedBalance });
+
+                loadStudents();
+                loadTotalCash();
+                loadHistory();
+            });
+
+            li.appendChild(removeBtn);
+            historyList.appendChild(li);
+        });
+    }
+}
