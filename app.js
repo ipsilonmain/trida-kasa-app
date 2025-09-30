@@ -11,7 +11,7 @@ const passwordInput = document.getElementById("password");
 const loginBtn = document.getElementById("login-btn");
 const loginMsg = document.getElementById("login-msg");
 
-// Admin elementy
+// Admin
 const totalCashEl = document.getElementById("total-cash");
 const newStudentName = document.getElementById("new-student-name");
 const newStudentEmail = document.getElementById("new-student-email");
@@ -28,7 +28,7 @@ const showStudentHistoryBtn = document.getElementById("show-student-history-btn"
 const selectedStudentHistoryList = document.getElementById("selected-student-history-list");
 const logoutBtn = document.getElementById("logout-btn");
 
-// Student elementy
+// Student
 const studentNameEl = document.getElementById("student-name");
 const studentBalanceEl = document.getElementById("student-balance");
 const studentHistoryList = document.getElementById("student-history-list");
@@ -42,30 +42,19 @@ loginBtn.addEventListener("click", async () => {
     try {
         const userCredential = await signInWithEmailAndPassword(auth, emailInput.value.trim(), passwordInput.value);
         const user = userCredential.user;
-
         const userDoc = await getDoc(doc(db, "users", user.uid));
         if(!userDoc.exists()) throw new Error("Uživatel nemá přiřazenou roli.");
         const role = userDoc.data().role;
-
-        if(role === "admin"){
-            showAdminDashboard();
-        } else {
-            showStudentDashboard(userDoc.data().studentId);
-        }
+        if(role === "admin") showAdminDashboard();
+        else showStudentDashboard(userDoc.data().studentId);
     } catch (e) {
         loginMsg.textContent = "Chyba při přihlášení: " + e.message;
     }
 });
 
 // ===================== Logout =====================
-logoutBtn.addEventListener("click", async () => {
-    await signOut(auth);
-    location.reload();
-});
-logoutBtnStudent.addEventListener("click", async () => {
-    await signOut(auth);
-    location.reload();
-});
+logoutBtn.addEventListener("click", async () => { await signOut(auth); location.reload(); });
+logoutBtnStudent.addEventListener("click", async () => { await signOut(auth); location.reload(); });
 
 // ===================== Admin Dashboard =====================
 async function showAdminDashboard(){
@@ -85,7 +74,6 @@ async function loadStudents(){
         const li = document.createElement("li");
         li.textContent = `${docSnap.data().name} - ${docSnap.data().balance || 0} Kč`;
         studentsList.appendChild(li);
-
         const option = document.createElement("option");
         option.value = docSnap.id;
         option.textContent = docSnap.data().name;
@@ -96,9 +84,7 @@ async function loadStudents(){
 async function loadTotalCash(){
     let total = 0;
     const studentsSnapshot = await getDocs(collection(db, "students"));
-    studentsSnapshot.forEach(docSnap => {
-        total += docSnap.data().balance || 0;
-    });
+    studentsSnapshot.forEach(docSnap => total += docSnap.data().balance || 0);
     totalCashEl.textContent = total;
 }
 
@@ -107,25 +93,15 @@ addStudentBtn.addEventListener("click", async () => {
     const name = newStudentName.value.trim();
     const email = newStudentEmail.value.trim();
     const password = newStudentPassword.value.trim();
-
     if(!name || !email || !password) return alert("Vyplň jméno, email a heslo!");
-
     try {
         const studentDocRef = await addDoc(collection(db, "students"), { name: name, balance: 0 });
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         await setDoc(doc(db, "users", userCredential.user.uid), { role: "student", studentId: studentDocRef.id });
-
         alert(`Student vytvořen!\nEmail: ${email}\nHeslo: ${password}`);
-
-        newStudentName.value = "";
-        newStudentEmail.value = "";
-        newStudentPassword.value = "";
-        await loadStudents();
-        await loadTotalCash();
-        await loadHistoryDropdown();
-    } catch(e) {
-        alert("Chyba při vytváření studenta: " + e.message);
-    }
+        newStudentName.value=""; newStudentEmail.value=""; newStudentPassword.value="";
+        await loadStudents(); await loadTotalCash(); await loadHistoryDropdown();
+    } catch(e) { alert("Chyba při vytváření studenta: " + e.message); }
 });
 
 // Přidání transakce
@@ -134,46 +110,34 @@ addTransactionBtn.addEventListener("click", async () => {
     const amount = Number(amountInput.value);
     const reason = reasonInput.value.trim();
     if(!studentId || !amount) return alert("Vyber žáka a zadej částku!");
-
     const studentDoc = await getDoc(doc(db, "students", studentId));
     const newBalance = (studentDoc.data().balance || 0) + amount;
-
     await updateDoc(doc(db, "students", studentId), { balance: newBalance });
-    const txRef = await addDoc(collection(db, "students", studentId, "transactions"), {
-        amount: amount,
-        type: amount>0?"platba":"vyber",
-        reason: reason,
-        timestamp: new Date()
+    await addDoc(collection(db, "students", studentId, "transactions"), {
+        amount, type: amount>0?"platba":"vyber", reason, timestamp: new Date()
     });
-
-    amountInput.value = "";
-    reasonInput.value = "";
-    await loadStudents();
-    await loadTotalCash();
-    await loadHistory();
-    await loadHistoryDropdown();
+    amountInput.value=""; reasonInput.value="";
+    await loadStudents(); await loadTotalCash(); await loadHistory(); await loadHistoryDropdown();
 });
 
-// Historie všech studentů s tlačítkem odstranit
+// Historie všech studentů s tlačítkem Odstranit
 async function loadHistory(){
     historyList.innerHTML = "";
     const studentsSnapshot = await getDocs(collection(db, "students"));
     for(const docSnap of studentsSnapshot.docs){
         const transactionsSnap = await getDocs(collection(db, "students", docSnap.id, "transactions"));
-        transactionsSnap.forEach(tx => {
+        transactionsSnap.forEach(txDoc => {
+            const tx = txDoc.data();
             const li = document.createElement("li");
-            li.textContent = `${docSnap.data().name}: ${tx.data().amount} Kč (${tx.data().type}) - ${tx.data().reason || ''} - ${tx.data().timestamp.toDate().toLocaleString()}`;
+            li.textContent = `${docSnap.data().name}: ${tx.amount} Kč (${tx.type}) - ${tx.reason || ''} - ${tx.timestamp.toDate().toLocaleString()}`;
             const delBtn = document.createElement("button");
             delBtn.textContent = "Odstranit";
             delBtn.style.marginLeft = "10px";
             delBtn.addEventListener("click", async () => {
-                await deleteDoc(doc(db, "students", docSnap.id, "transactions", tx.id));
-                // aktualizovat balance
-                const newBalance = (docSnap.data().balance || 0) - tx.data().amount;
+                await deleteDoc(doc(db, "students", docSnap.id, "transactions", txDoc.id));
+                const newBalance = (docSnap.data().balance || 0) - tx.amount;
                 await updateDoc(doc(db, "students", docSnap.id), { balance: newBalance });
-                await loadStudents();
-                await loadTotalCash();
-                await loadHistory();
+                await loadStudents(); await loadTotalCash(); await loadHistory();
             });
             li.appendChild(delBtn);
             historyList.appendChild(li);
@@ -181,7 +145,7 @@ async function loadHistory(){
     }
 }
 
-// Dropdown pro zobrazení historie konkrétního studenta
+// Dropdown historie konkrétního studenta
 async function loadHistoryDropdown(){
     historyStudentDropdown.innerHTML = '<option value="">Vyber žáka</option>';
     const studentsSnapshot = await getDocs(collection(db, "students"));
@@ -197,23 +161,20 @@ showStudentHistoryBtn.addEventListener("click", async () => {
     const studentId = historyStudentDropdown.value;
     if(!studentId) return alert("Vyber žáka.");
     selectedStudentHistoryList.innerHTML = "";
-
     const transactionsSnap = await getDocs(collection(db, "students", studentId, "transactions"));
-    transactionsSnap.forEach(tx => {
+    transactionsSnap.forEach(txDoc => {
+        const tx = txDoc.data();
         const li = document.createElement("li");
-        li.textContent = `${tx.data().amount} Kč (${tx.data().type}) - ${tx.data().reason || ''} - ${tx.data().timestamp.toDate().toLocaleString()}`;
+        li.textContent = `${tx.amount} Kč (${tx.type}) - ${tx.reason || ''} - ${tx.timestamp.toDate().toLocaleString()}`;
         const delBtn = document.createElement("button");
         delBtn.textContent = "Odstranit";
-        delBtn.style.marginLeft = "10px";
+        delBtn.style.marginLeft="10px";
         delBtn.addEventListener("click", async () => {
-            await deleteDoc(doc(db, "students", studentId, "transactions", tx.id));
-            // aktualizovat balance
+            await deleteDoc(doc(db, "students", studentId, "transactions", txDoc.id));
             const studentDoc = await getDoc(doc(db, "students", studentId));
-            const newBalance = (studentDoc.data().balance || 0) - tx.data().amount;
+            const newBalance = (studentDoc.data().balance || 0) - tx.amount;
             await updateDoc(doc(db, "students", studentId), { balance: newBalance });
-            await loadStudents();
-            await loadTotalCash();
-            showStudentHistoryBtn.click(); // reload dropdown historie
+            await loadStudents(); await loadTotalCash(); showStudentHistoryBtn.click();
         });
         li.appendChild(delBtn);
         selectedStudentHistoryList.appendChild(li);
@@ -224,18 +185,16 @@ showStudentHistoryBtn.addEventListener("click", async () => {
 export async function showStudentDashboard(studentId){
     loginSection.style.display = "none";
     studentDashboard.style.display = "block";
-
     const studentDoc = await getDoc(doc(db, "students", studentId));
     if(!studentDoc.exists()) return;
-
     studentNameEl.textContent = studentDoc.data().name;
     studentBalanceEl.textContent = studentDoc.data().balance || 0;
-
     const transactionsSnap = await getDocs(collection(db, "students", studentId, "transactions"));
-    studentHistoryList.innerHTML = "";
-    transactionsSnap.forEach(tx => {
+    studentHistoryList.innerHTML="";
+    transactionsSnap.forEach(txDoc => {
+        const tx = txDoc.data();
         const li = document.createElement("li");
-        li.textContent = `${tx.data().amount} Kč (${tx.data().type}) - ${tx.data().reason || ''} - ${tx.data().timestamp.toDate().toLocaleString()}`;
+        li.textContent = `${tx.amount} Kč (${tx.type}) - ${tx.reason || ''} - ${tx.timestamp.toDate().toLocaleString()}`;
         studentHistoryList.appendChild(li);
     });
 }
@@ -244,15 +203,13 @@ export async function showStudentDashboard(studentId){
 changePasswordBtn.addEventListener("click", async () => {
     const newPassword = newPasswordInput.value.trim();
     if(!newPassword) return alert("Zadej nové heslo!");
-
     try {
         const user = auth.currentUser;
         if(!user) throw new Error("Uživatel není přihlášen.");
-
         await updatePassword(user, newPassword);
         passwordChangeMsg.textContent = "Heslo bylo úspěšně změněno!";
-        newPasswordInput.value = "";
-    } catch(e) {
+        newPasswordInput.value="";
+    } catch(e){
         console.error(e);
         passwordChangeMsg.textContent = "Chyba při změně hesla: " + e.message;
     }
