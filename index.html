@@ -27,13 +27,16 @@
 
         <h3>Přidat žáka</h3>
         <input type="text" id="new-student-name" placeholder="Jméno žáka">
+        <input type="email" id="new-student-email" placeholder="Email pro přihlášení">
         <button id="add-student-btn">Přidat žáka</button>
 
         <h3>Seznam žáků</h3>
         <ul id="students-list"></ul>
 
         <h3>Transakce</h3>
-        <input type="text" id="payee" placeholder="Jméno žáka">
+        <select id="payee-dropdown">
+            <option value="">Vyber žáka</option>
+        </select>
         <input type="number" id="amount" placeholder="Částka">
         <input type="text" id="reason" placeholder="Důvod platby">
         <button id="add-transaction-btn">Přidat platbu / výběr</button>
