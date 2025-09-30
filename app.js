@@ -1,6 +1,6 @@
 import { auth, db } from './firebase-config.js';
-import { signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
-import { collection, doc, getDoc, getDocs, addDoc, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+import { signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, updatePassword } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+import { collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
 
 // HTML elementy
 const loginSection = document.getElementById("login-section");
@@ -33,8 +33,11 @@ const studentNameEl = document.getElementById("student-name");
 const studentBalanceEl = document.getElementById("student-balance");
 const studentHistoryList = document.getElementById("student-history-list");
 const logoutBtnStudent = document.getElementById("logout-btn-student");
+const newPasswordInput = document.getElementById("new-password");
+const changePasswordBtn = document.getElementById("change-password-btn");
+const passwordChangeMsg = document.getElementById("password-change-msg");
 
-// Přihlášení
+// ===================== Přihlášení =====================
 loginBtn.addEventListener("click", async () => {
     try {
         const userCredential = await signInWithEmailAndPassword(auth, emailInput.value.trim(), passwordInput.value);
@@ -54,7 +57,7 @@ loginBtn.addEventListener("click", async () => {
     }
 });
 
-// Logout
+// ===================== Logout =====================
 logoutBtn.addEventListener("click", async () => {
     await signOut(auth);
     location.reload();
@@ -99,7 +102,7 @@ async function loadTotalCash(){
     totalCashEl.textContent = total;
 }
 
-// Přidání studenta s vlastním heslem
+// Přidání studenta
 addStudentBtn.addEventListener("click", async () => {
     const name = newStudentName.value.trim();
     const email = newStudentEmail.value.trim();
@@ -117,16 +120,11 @@ addStudentBtn.addEventListener("click", async () => {
         newStudentName.value = "";
         newStudentEmail.value = "";
         newStudentPassword.value = "";
-
         await loadStudents();
+        await loadTotalCash();
         await loadHistoryDropdown();
-    } catch (e) {
-        if(e.code === "auth/email-already-in-use"){
-            alert("Tento email už je použitý. Zvol jiný.");
-        } else {
-            console.error(e);
-            alert("Chyba: " + e.message);
-        }
+    } catch(e) {
+        alert("Chyba při vytváření studenta: " + e.message);
     }
 });
 
@@ -135,30 +133,27 @@ addTransactionBtn.addEventListener("click", async () => {
     const studentId = payeeDropdown.value;
     const amount = Number(amountInput.value);
     const reason = reasonInput.value.trim();
-    if(!studentId || !amount) return alert("Vyber žáka a zadej částku.");
+    if(!studentId || !amount) return alert("Vyber žáka a zadej částku!");
 
     const studentDoc = await getDoc(doc(db, "students", studentId));
-    if(!studentDoc.exists()) return alert("Žák nenalezen.");
-
     const newBalance = (studentDoc.data().balance || 0) + amount;
-    await updateDoc(doc(db, "students", studentId), { balance: newBalance });
 
+    await updateDoc(doc(db, "students", studentId), { balance: newBalance });
     await addDoc(collection(db, "students", studentId, "transactions"), {
         amount: amount,
-        type: amount>0 ? "platba" : "vyber",
+        type: amount>0?"platba":"vyber",
         reason: reason,
         timestamp: new Date()
     });
 
     amountInput.value = "";
     reasonInput.value = "";
-
     await loadStudents();
     await loadTotalCash();
     await loadHistory();
 });
 
-// Zobrazení historie všech studentů
+// Historie všech studentů
 async function loadHistory(){
     historyList.innerHTML = "";
     const studentsSnapshot = await getDocs(collection(db, "students"));
@@ -172,7 +167,7 @@ async function loadHistory(){
     }
 }
 
-// Dropdown pro zobrazení historie jednotlivého studenta
+// Dropdown pro zobrazení historie konkrétního studenta
 async function loadHistoryDropdown(){
     historyStudentDropdown.innerHTML = '<option value="">Vyber žáka</option>';
     const studentsSnapshot = await getDocs(collection(db, "students"));
@@ -198,7 +193,7 @@ showStudentHistoryBtn.addEventListener("click", async () => {
 });
 
 // ===================== Student Dashboard =====================
-async function showStudentDashboard(studentId){
+export async function showStudentDashboard(studentId){
     loginSection.style.display = "none";
     studentDashboard.style.display = "block";
 
@@ -217,12 +212,7 @@ async function showStudentDashboard(studentId){
     });
 }
 
-import { updatePassword } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
-
-const newPasswordInput = document.getElementById("new-password");
-const changePasswordBtn = document.getElementById("change-password-btn");
-const passwordChangeMsg = document.getElementById("password-change-msg");
-
+// ===================== Změna hesla =====================
 changePasswordBtn.addEventListener("click", async () => {
     const newPassword = newPasswordInput.value.trim();
     if(!newPassword) return alert("Zadej nové heslo!");
