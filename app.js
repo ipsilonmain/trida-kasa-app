@@ -93,23 +93,45 @@ async function loadTotalCash(){
 addStudentBtn.addEventListener("click", async () => {
     const name = newStudentName.value.trim();
     const email = newStudentEmail.value.trim();
-    if(!name || !email) return alert("Vyplň jméno a email");
+    const password = newStudentPassword.value; // načteme heslo z inputu
 
-    // vytvoření dokumentu studenta
-    const studentDocRef = await addDoc(collection(db, "students"), { name: name, balance: 0 });
+    if (!name || !email || !password) return alert("Vyplň jméno, email a heslo");
 
-    // vytvoření uživatele ve Firebase Auth
-    const tempPassword = Math.random().toString(36).slice(-8); // dočasné heslo
-    const userCredential = await createUserWithEmailAndPassword(auth, email, tempPassword);
+    try {
+        // 1️⃣ vytvořit dokument studenta
+        const studentDocRef = await addDoc(collection(db, "students"), {
+            name: name,
+            balance: 0
+        });
 
-    // přiřazení role student
-    await setDoc(doc(db, "users", userCredential.user.uid), { role: "student", studentId: studentDocRef.id });
+        // 2️⃣ vytvořit Auth účet se zadaným heslem
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
 
-    newStudentName.value = "";
-    newStudentEmail.value = "";
-    loadStudents();
+        // 3️⃣ propojit Auth účet se studentem
+        await setDoc(doc(db, "users", userCredential.user.uid), {
+            role: "student",
+            studentId: studentDocRef.id
+        });
+
+        alert(`Student vytvořen!\nEmail: ${email}\nHeslo: ${password}`);
+
+        // vyčistit pole
+        newStudentName.value = "";
+        newStudentEmail.value = "";
+        newStudentPassword.value = "";
+
+        // aktualizovat seznam studentů a dropdown
+        await loadStudents();
+        await loadHistoryDropdown();
+    } catch (e) {
+        if(e.code === "auth/email-already-in-use"){
+            alert("Tento email už je použitý. Zvol jiný.");
+        } else {
+            console.error(e);
+            alert("Chyba: " + e.message);
+        }
+    }
 });
-
 // Přidání transakce s dropdown
 addTransactionBtn.addEventListener("click", async () => {
     const studentId = payeeDropdown.value;
