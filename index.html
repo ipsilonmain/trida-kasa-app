@@ -1,56 +1,58 @@
 <!DOCTYPE html>
 <html lang="cs">
 <head>
-  <!-- Firebase App (core SDK) -->
-<script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js"></script>
-<!-- Firebase Auth -->
-<script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js"></script>
-<!-- Firebase Firestore -->
-<script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js"></script>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Třídní kasa</title>
-  <link rel="stylesheet" href="style.css">
-  <script type="module" src="app.js" defer></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Třídní Kasa</title>
+    <link rel="stylesheet" href="style.css">
+    <script type="module" src="firebase-config.js"></script>
+    <script type="module" src="app.js"></script>
 </head>
 <body>
-  <div id="login-screen" class="screen active">
-    <h1>📒 Třídní kasa</h1>
-    <input id="email" type="email" placeholder="Email">
-    <input id="password" type="password" placeholder="Heslo">
-    <button id="login-btn">Přihlásit se</button>
-    <p id="login-error"></p>
-  </div>
+    <h1>Třídní Kasa</h1>
 
-  <div id="app-screen" class="screen">
-    <header>
-      <h1>📒 Třídní kasa</h1>
-      <button id="logout-btn">Odhlásit se</button>
-    </header>
+    <!-- Přihlášení -->
+    <div id="login-section">
+        <h2>Přihlášení</h2>
+        <input type="email" id="email" placeholder="Email">
+        <input type="password" id="password" placeholder="Heslo">
+        <button id="login-btn">Přihlásit se</button>
+        <p id="login-msg"></p>
+    </div>
 
-    <main>
-      <section id="payments">
-        <h2>Platby</h2>
-        <div id="payment-list"></div>
-        <button id="add-payment">➕ Přidat platbu</button>
-      </section>
+    <!-- Admin dashboard -->
+    <div id="admin-dashboard" style="display:none;">
+        <h2>Pokladní Dashboard</h2>
+        <p>Celkem v kase: <span id="total-cash">0</span> Kč</p>
 
-      <section id="students">
-        <h2>Žáci</h2>
-        <div id="student-list"></div>
-        <button id="add-student">➕ Přidat žáka</button>
-      </section>
+        <h3>Přidat žáka</h3>
+        <input type="text" id="new-student-name" placeholder="Jméno žáka">
+        <button id="add-student-btn">Přidat žáka</button>
 
-      <section id="summary">
-        <h2>💰 Stav kasy</h2>
-        <p id="cash-total">Načítám...</p>
-      </section>
+        <h3>Seznam žáků</h3>
+        <ul id="students-list"></ul>
 
-      <section id="history">
-        <h2>📜 Historie</h2>
+        <h3>Transakce</h3>
+        <input type="text" id="payee" placeholder="Jméno žáka">
+        <input type="number" id="amount" placeholder="Částka">
+        <button id="add-transaction-btn">Přidat platbu / výběr</button>
+
+        <h3>Historie</h3>
         <ul id="history-list"></ul>
-      </section>
-    </main>
-  </div>
+
+        <button id="logout-btn">Odhlásit se</button>
+    </div>
+
+    <!-- Student dashboard -->
+    <div id="student-dashboard" style="display:none;">
+        <h2>Váš účet</h2>
+        <p>Jméno: <span id="student-name"></span></p>
+        <p>Zaplaceno: <span id="student-balance">0</span> Kč</p>
+
+        <h3>Historie</h3>
+        <ul id="student-history-list"></ul>
+
+        <button id="logout-btn-student">Odhlásit se</button>
+    </div>
 </body>
 </html>
