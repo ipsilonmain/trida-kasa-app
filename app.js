@@ -126,28 +126,28 @@ addTransactionBtn.addEventListener("click", async () => {
     loadHistory();
 });
 
-// Historie s důvodem a odebráním
+// Historie admina s důvodem a odebráním
 const loadHistory = async () => {
     historyList.innerHTML = "";
     const studentsSnapshot = await getDocs(collection(db, "students"));
 
-    for(const docSnap of studentsSnapshot.docs){
-        const transactionsSnap = await getDocs(collection(db, "students", docSnap.id, "transactions"));
-        transactionsSnap.forEach(tx => {
-            const li = document.createElement("li");
-            li.textContent = `${docSnap.data().name}: ${tx.data().amount} Kč (${tx.data().type}) - ${tx.data().reason} - ${tx.data().timestamp.toDate()}`;
+    studentsSnapshot.forEach(async (studentDoc) => {
+        const transactionsSnap = await getDocs(collection(db, "students", studentDoc.id, "transactions"));
 
+        transactionsSnap.forEach(txDoc => {
+            const tx = txDoc.data();
+            const li = document.createElement("li");
+            const ts = tx.timestamp?.toDate ? tx.timestamp.toDate() : tx.timestamp;
+            li.textContent = `${studentDoc.data().name}: ${tx.amount} Kč (${tx.type}) - ${tx.reason} - ${ts}`;
+
+            // tlačítko odebrat
             const removeBtn = document.createElement("button");
             removeBtn.textContent = "Odebrat";
             removeBtn.style.marginLeft = "10px";
-            removeBtn.dataset.studentId = docSnap.id;
-            removeBtn.dataset.txId = tx.id;
             removeBtn.addEventListener("click", async () => {
-                await deleteDoc(doc(db, "students", docSnap.id, "transactions", tx.id));
-
-                const updatedBalance = (docSnap.data().balance || 0) - tx.data().amount;
-                await updateDoc(doc(db, "students", docSnap.id), { balance: updatedBalance });
-
+                await deleteDoc(doc(db, "students", studentDoc.id, "transactions", txDoc.id));
+                const updatedBalance = (studentDoc.data().balance || 0) - tx.amount;
+                await updateDoc(doc(db, "students", studentDoc.id), { balance: updatedBalance });
                 loadStudents();
                 loadTotalCash();
                 loadHistory();
@@ -156,7 +156,7 @@ const loadHistory = async () => {
             li.appendChild(removeBtn);
             historyList.appendChild(li);
         });
-    }
+    });
 }
 
 // ===================== Student Dashboard =====================
@@ -172,9 +172,11 @@ async function showStudentDashboard(studentId){
 
     const transactionsSnap = await getDocs(collection(db, "students", studentId, "transactions"));
     studentHistoryList.innerHTML = "";
-    transactionsSnap.forEach(tx => {
+    transactionsSnap.forEach(txDoc => {
+        const tx = txDoc.data();
         const li = document.createElement("li");
-        li.textContent = `${tx.data().amount} Kč (${tx.data().type}) - ${tx.data().reason} - ${tx.data().timestamp.toDate()}`;
+        const ts = tx.timestamp?.toDate ? tx.timestamp.toDate() : tx.timestamp;
+        li.textContent = `${tx.amount} Kč (${tx.type}) - ${tx.reason} - ${ts}`;
         studentHistoryList.appendChild(li);
     });
 }
