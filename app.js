@@ -1,6 +1,6 @@
-import { auth, db } from "./firebase-config.js";
-import { signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-import { collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+import { auth, db } from './firebase-config.js';
+import { signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+import { collection, doc, getDoc, getDocs, addDoc, updateDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
 
 // HTML elementy
 const loginSection = document.getElementById("login-section");
@@ -34,13 +34,15 @@ loginBtn.addEventListener("click", async () => {
         const userCredential = await signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
         const user = userCredential.user;
 
+        // Zjistit roli uživatele z kolekce users
         const userDoc = await getDoc(doc(db, "users", user.uid));
-        const role = userDoc.data().role;
+        if (!userDoc.exists()) throw new Error("Uživatel nemá přiřazenou roli.");
+        const role = userDoc.data().role; // 'admin' nebo 'student'
 
         if(role === "admin"){
             showAdminDashboard();
         } else {
-            showStudentDashboard(user.uid);
+            showStudentDashboard(userDoc.data().studentId);
         }
     } catch (e) {
         loginMsg.textContent = "Chyba při přihlášení: " + e.message;
@@ -48,16 +50,16 @@ loginBtn.addEventListener("click", async () => {
 });
 
 // Logout
-logoutBtn.addEventListener("click", () => {
-    signOut(auth);
+logoutBtn.addEventListener("click", async () => {
+    await signOut(auth);
     location.reload();
 });
-logoutBtnStudent.addEventListener("click", () => {
-    signOut(auth);
+logoutBtnStudent.addEventListener("click", async () => {
+    await signOut(auth);
     location.reload();
 });
 
-// Admin dashboard
+// ===================== Admin Dashboard =====================
 async function showAdminDashboard(){
     loginSection.style.display = "none";
     adminDashboard.style.display = "block";
@@ -112,7 +114,7 @@ addTransactionBtn.addEventListener("click", async () => {
     await updateDoc(doc(db, "students", studentId), { balance: newBalance });
     await addDoc(collection(db, "students", studentId, "transactions"), {
         amount: amount,
-        type: amount>0?"platba":"vyber",
+        type: amount>0 ? "platba" : "vyber",
         timestamp: new Date()
     });
 
@@ -136,15 +138,14 @@ async function loadHistory(){
     }
 }
 
-// Student dashboard
-async function showStudentDashboard(uid){
+// ===================== Student Dashboard =====================
+async function showStudentDashboard(studentId){
     loginSection.style.display = "none";
     studentDashboard.style.display = "block";
 
-    const userDoc = await getDoc(doc(db, "users", uid));
-    const studentId = userDoc.data().studentId;
-
     const studentDoc = await getDoc(doc(db, "students", studentId));
+    if(!studentDoc.exists()) return;
+
     studentNameEl.textContent = studentDoc.data().name;
     studentBalanceEl.textContent = studentDoc.data().balance || 0;
 
