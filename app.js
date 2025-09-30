@@ -194,3 +194,41 @@ async function showStudentDashboard(studentId){
         studentHistoryList.appendChild(li);
     }
 }
+
+const historyStudentDropdown = document.getElementById("history-student-dropdown");
+const showStudentHistoryBtn = document.getElementById("show-student-history-btn");
+const selectedStudentHistoryList = document.getElementById("selected-student-history-list");
+
+// Naplnění dropdownu žáky
+async function loadHistoryDropdown() {
+    historyStudentDropdown.innerHTML = '<option value="">Vyber žáka</option>';
+    const studentsSnapshot = await getDocs(collection(db, "students"));
+    studentsSnapshot.forEach(docSnap => {
+        const option = document.createElement("option");
+        option.value = docSnap.id;
+        option.textContent = docSnap.data().name;
+        historyStudentDropdown.appendChild(option);
+    });
+}
+
+// Zobrazení historie vybraného žáka
+showStudentHistoryBtn.addEventListener("click", async () => {
+    const studentId = historyStudentDropdown.value;
+    if(!studentId) return alert("Vyber žáka");
+
+    selectedStudentHistoryList.innerHTML = "";
+
+    const transactionsSnap = await getDocs(collection(db, "students", studentId, "transactions"));
+    for(const txDoc of transactionsSnap.docs){
+        const tx = txDoc.data();
+        const date = tx.timestamp?.toDate ? tx.timestamp.toDate() : new Date(tx.timestamp || Date.now());
+        const formattedDate = `${String(date.getDate()).padStart(2,'0')}.${String(date.getMonth()+1).padStart(2,'0')}.${date.getFullYear()} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
+
+        const li = document.createElement("li");
+        li.textContent = `${tx.amount} Kč (${tx.type}) - ${tx.reason} - ${formattedDate}`;
+        selectedStudentHistoryList.appendChild(li);
+    }
+});
+
+// Zavolat při načtení admin dashboardu
+loadHistoryDropdown();
