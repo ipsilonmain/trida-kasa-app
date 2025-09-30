@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Třídní kasa</title>
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="app.js" defer></script>
+</head>
+<body>
+  <div id="login-screen" class="screen active">
+    <h1>📒 Třídní kasa</h1>
+    <input id="email" type="email" placeholder="Email">
+    <input id="password" type="password" placeholder="Heslo">
+    <button id="login-btn">Přihlásit se</button>
+    <p id="login-error"></p>
+  </div>
+
+  <div id="app-screen" class="screen">
+    <header>
+      <h1>📒 Třídní kasa</h1>
+      <button id="logout-btn">Odhlásit se</button>
+    </header>
+
+    <main>
+      <section id="payments">
+        <h2>Platby</h2>
+        <div id="payment-list"></div>
+        <button id="add-payment">➕ Přidat platbu</button>
+      </section>
+
+      <section id="students">
+        <h2>Žáci</h2>
+        <div id="student-list"></div>
+        <button id="add-student">➕ Přidat žáka</button>
+      </section>
+
+      <section id="summary">
+        <h2>💰 Stav kasy</h2>
+        <p id="cash-total">Načítám...</p>
+      </section>
+
+      <section id="history">
+        <h2>📜 Historie</h2>
+        <ul id="history-list"></ul>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
