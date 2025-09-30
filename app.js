@@ -1,9 +1,5 @@
 // ====== FIREBASE SDK IMPORT ======
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } 
-  from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, updateDoc, arrayUnion, onSnapshot } 
-  from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
 
 // ====== TVŮJ FIREBASE CONFIG ======
 const firebaseConfig = {
