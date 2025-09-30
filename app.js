@@ -59,7 +59,7 @@ async function showAdminDashboard(){
     adminDashboard.style.display = "block";
     await loadStudents();
     await loadTotalCash();
-    await loadHistory();
+    
 }
 
 // Načtení žáků
